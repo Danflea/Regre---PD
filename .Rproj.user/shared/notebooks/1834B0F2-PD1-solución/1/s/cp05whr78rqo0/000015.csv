@@ -1,0 +1,3 @@
+"0",""
+"0","# Colorear las áreas de rechazo"
+"0","polygon(c(x[x <= -2.55], -2.55), c(y[x <= -2.55], 0), col=""red"", border=NA)"

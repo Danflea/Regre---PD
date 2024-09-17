@@ -1,0 +1,128 @@
+---
+title: "Prueba de Regresión"
+author: "Estrella Guerra, Danilo David"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
+```
+
+El alcalde de una municipalidad solicitó que se utilicen los datos recolectados de los hogares de esa municipalidad y encargó al personal de R&Dgo Analytics que estime el modelo de Regresión Lineal Simple para explicar el peso (en kg) de papel o cartón desechado al mes/familia en función del ingreso familiar mensual (en miles de soles). Se obtuvieron los siguientes datos:
+
+```{r}
+# Datos proporcionados
+Y <- c(18.3, 16.7, 21, 21.1, 23.9,
+          18.6, 22.3, 20.8, 23.2, 21.3, 20.4, 20.3, 18.3, 20.1, 19.8)
+X <- c(11.5, 11.1, 16.2, 16.4, 
+             18.7, 14, 17.1, 16, 17.2, 16.5, 15.6, 15.5, 13.9, 15.5, 15.5)
+
+# Creación del data frame
+datos <- data.frame(X, Y)
+
+# Visualización del data frame
+print(datos)
+
+```
+
+\newpage
+
+# Diagrama de Dispersión
+
+```{r}
+plot(datos$X,datos$Y,
+     col="darkgreen", xlab = "Ingreso", ylab = "Peso")
+```
+
+# Pregunta 1
+
+A un nivel de significación de 0.05, responda las siguientes preguntas:
+
+a) La pendiente estimada del modelo de regresion lineal simple es: 
+
+```{r}
+lm(Y~X, data = datos)
+```
+
+\newpage
+
+b) La suma de cuadrados del error en el cuadro de Análisis de Varianza es:  
+
+```{r}
+# Ajustar el modelo de regresión lineal simple
+modelo <- lm(Y~X, data = datos)
+
+# Realizar el análisis de varianza
+anova_modelo <- anova(modelo)
+
+# Mostrar el cuadro de ANOVA
+print(anova_modelo)
+
+# Extraer la Suma de cuadrados del Error (SCE)
+SCE <- anova_modelo["Residuals", "Sum Sq"]
+
+round(SCE, 3)
+```
+
+
+c) El valor del coeficiente de determinación (en términos porcentuales) es igual a:  
+
+```{r}
+summary(modelo)
+```
+El valor del coeficiente de determinación $(R^2)$ Multiple R-squared:  0.8947 y en porcentaje es 89.47%
+
+# Pregunta 2  
+
+Si se estima un intervalo de confianza para el coeficiente de correlación para dos variables X e Y  y se encuentra que su límite inferior es positivo y su límite superior es negativo.
+
+Solo existen 3 posibles casos:
+
+$$IC(\beta_{1}) =[-; +]$$  
+$$IC(\beta_{1}) =[-; -]$$  
+$$IC(\beta_{1}) =[+; +]$$  
+
+Porlo tanto podemos deducir que el intervalo ha sido mal estimado.  
+
+
+# Pregunta 3  
+
+Se quiere evaluar la significancia de la pendiente del un modelo de regresión lineal simple en base a una muestra de tamaño 22. Por lo tanto el valor crítico (con aproximación a 3 decimales) a un nivel de significación de 0.03 para contrastar el estadístico F es: 
+
+
+```{r}
+round(qf(1-0.03, 1, 20), 3)
+```
+Dado que el F-statistic (110.5) es mayor que tu valor crítico (5.458), y el p-value es extremadamente pequeño (0.0000001007), puedes concluir que la relación entre el ingreso mensual de las familias y el peso del cartón desechado es estadísticamente significativa.
+
+```{r echo=FALSE, fig.align='center', fig.height=3.5, fig.width=4.5}
+# Definir los grados de libertad del numerador y denominador
+df1 <- 1  # grados de libertad del numerador (para la regresión lineal simple)
+df2 <- 20 # grados de libertad del denominador (n - k - 1 = 22 - 1 - 1 = 20)
+
+# Definir el valor crítico para un nivel de significancia del 3%
+alpha <- 0.03
+f_critico <- qf(1 - alpha, df1, df2)
+
+# Graficar la distribución F
+curve(df(x, df1, df2), from = 0, to = 10, 
+      main = "Distribución F con df1=1 y df2=20", 
+      ylab = "Densidad", 
+      xlab = "Valores F")
+
+# Agregar una línea vertical en el valor crítico
+abline(v = f_critico, col = "red", lty = 2)
+
+# Resaltar el área a la derecha del valor crítico
+x_vals <- seq(f_critico, 10, length.out = 100)
+y_vals <- df(x_vals, df1, df2)
+polygon(c(f_critico, x_vals, 10), c(0, y_vals, 0), col = rgb(1, 0, 0, 0.2))
+
+# Agregar texto para indicar el valor crítico
+text(f_critico, 0.02, labels = paste("F crítico =", round(f_critico, 3)), pos = 3.5, col = "blue")
+
+```
+
+

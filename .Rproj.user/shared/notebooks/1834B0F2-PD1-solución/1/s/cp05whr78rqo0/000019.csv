@@ -1,0 +1,4 @@
+"0",""
+"0","# Agregar leyenda"
+"0","legend(""topright"", legend=c(""Zonas de Rechazo""), fill=""red"", border=""black"")"
+"0",""

@@ -1,0 +1,207 @@
+---
+title: "PD.1.2"
+author: "Estrella Guerra, Danilo David"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+PD2 <- read_excel("PD1.2.xlsx", sheet = "CASO2")
+options(scipen = 999)
+```
+
+La empresa azucarera del Norte llevo a cabo un estudio con la finalidad de analizar la influencia de algunos factores sobre el rendimiento de azúcar. Se desea determinar si existe relación entre el porcentaje de azúcar por caña (Y) con el porcentaje de sacarosa por caña (X). Los resultados obtenidos se presentan en la siguiente tabla:
+
+
+## **Análisis de Correlación**  
+
+- **Prueba t para correlación**: La prueba t evalúa si un coeficiente de correlación es significativamente diferente de cero. Es una prueba específica que se utiliza cuando se está examinando la relación lineal entre dos variables continuas en un análisis de correlación simple.
+
+### 1) **Elabore el gráfico de dispersión**
+
+```{r echo=TRUE, fig.align='center', fig.height=3.5, fig.width=4.5}
+
+plot(PD2$X,PD2$Y,main="Diagrama de Dispersión",
+     col="blue", xlab = "Azúcar", ylab = "Sacarosa")
+
+```
+
+Se puede apreciar una relación directa entre el azúcar y la sacarosa.
+
+\newpage
+
+### a) **Estime el coeficiente de correlación de Pearson**
+
+```{r}
+cor(PD2$X,PD2$Y,method="p") # p: pearson 
+
+```
+El coeficiente de correlación de Pearson determina si hay una asociación entre las variables azúcar y sacarosa. Debido a que fluctua en el intervalo de -1 a 1, al ejecutar el código, el valor del coeficiente de correlación de Pearson 0.9852942 nos indica que hay una fuerte asociación lineal directa entre el azúcar y la sacarosa.  
+
+### b) **Pruebe a un nivel de significación de 0.03 si el coeficiente de correlación es significativamente diferente de cero**
+
+1) 
+ $$H_{0} : \rho = 0$$
+ $$H_{1} : \rho \neq 0 $$
+ 2) 
+ $$\alpha = 0.03$$
+ 3) 
+ 
+```{r}
+cor.test(PD2$X,PD2$Y,method="p",alternative = "t") # t: student
+```
+ 
+ del anterior codigo hemos obtenido el valor de:  
+ 
+ $t= 15.257$, $p-value = 0.000001252 \neq 0.000$ $\to$ $\alpha$  se rechaza $H_{0}$
+ 
+ \newpage
+ 
+ 
+ 4) **Intervalo de confianza (IC) de la prueba t**  
+ 
+```{r}
+qt(c(0.03/2, 1- 0.03/2), 7)
+```  
+```{r echo=FALSE, fig.align='center', fig.height=3.5, fig.width=4.5}
+# Configurar los valores para la gráfica
+x <- seq(-4, 4, length=1000)  # Rango de valores en el eje X
+y <- dt(x, df=7)  # Distribución t de Student con 30 grados de libertad
+
+# Graficar la distribución t
+plot(x, y, type="l", lwd=2, col="blue", main="Distribución t con Zonas de Rechazo",
+     ylab="Densidad", xlab="Valores de t")
+
+# Agregar las zonas de rechazo en -2.714573 y 2.714573
+abline(v=-2.714573, col="red", lwd=2, lty=2)  # Línea vertical en -2.714573
+abline(v=2.714573, col="red", lwd=2, lty=2)   # Línea vertical en 2.714573
+
+# Colorear las áreas de rechazo
+polygon(c(x[x <= -2.714573], -2.714573), c(y[x <= -2.714573], 0), col="red", border=NA)
+polygon(c(2.714573, x[x >= 2.714573]), c(0, y[x >= 2.714573]), col="red", border=NA)
+
+# Agregar leyenda
+legend("topright", legend=c("Zonas de Rechazo"), fill="red", border="black", cex = 0.6)
+
+# Agregar los valores de los intervalos de confianza en las líneas rojas
+text(-2.714573, 0.05, labels="-2.714573", pos=3, col="black", cex=0.7)
+text(2.714573, 0.05, labels="2.714573", pos=3, col="black", cex=0.7)
+```  
+Al haber obtenido un $t_{cal}$= 15.257 podemos observar que cae en la zona de rechazo, por lo tanto se acepta la hipótesis alterna $H_{0}$.
+ 
+ 
+ 
+ **Conclusión** : a un $\alpha = 0.03$ se puede afirmar que existe correlación significativa entre el porcentaje de azúcar y porcentaje de la sacarosa. Los resultados obtenidos son representativos y válidos por ende se recomienda continuar con el proceso.  
+ 
+### c) **Pruebe a un nivel de significación de 0.03 si el coeficiente de correlación es menor a 0.8**  
+ 
+ 1) 
+ $$H_{0} : \rho \geq 0.8$$
+ $$H_{1} : \rho < 0.8 $$
+ 2) 
+ $$\alpha = 0.03$$
+ 3)
+ 
+```{r}
+# Nivel de significancia
+alpha <- 0.03
+
+# Calcular el coeficiente de correlación
+cor_test <- cor.test(PD2$X, PD2$Y, method = "pearson")
+r_observado <- cor_test$estimate  # Valor del coeficiente de correlación observado
+
+# Valor de correlación de referencia
+r_referencia <- 0.8
+
+# Transformación de Fisher Z
+z_observado <- 0.5 * log((1 + r_observado) / (1 - r_observado))
+z_referencia <- 0.5 * log((1 + r_referencia) / (1 - r_referencia))
+
+# Tamaño de la muestra
+n <- length(PD2$X)
+
+# Estadístico Z para la prueba de hipótesis
+z_prueba <- (z_observado - z_referencia) / sqrt(1 / (n - 3))
+
+# Valor crítico para un nivel de significancia del 0.03 en una prueba unilateral (cola izquierda)
+z_critico <- qnorm(alpha)
+
+# Decisión de la prueba
+if (z_prueba < z_critico) {
+  cat("Rechazamos la hipótesis nula: El coeficiente de correlación es significativamente menor que 0.8.\n")
+} else {
+  cat("No se rechaza la hipótesis nula: No hay evidencia suficiente para afirmar que el coeficiente de correlación es menor que 0.8.\n")
+}
+
+# Mostrar el valor z y el valor crítico
+cat("Valor Z calculado:", z_prueba, "\n")
+cat("Valor Z crítico:", z_critico, "\n")
+
+
+``` 
+
+```{r echo=FALSE, fig.align='center', fig.height=3.5, fig.width=4.5}
+# Nivel de significancia
+alpha <- 0.03
+z_critico <- qnorm(alpha)
+
+# Crear secuencia de valores Z para la gráfica
+z_values <- seq(-4, 4, by = 0.01)
+
+# Función de densidad de la distribución normal
+densidad <- dnorm(z_values)
+
+# Crear el gráfico de la distribución normal
+plot(z_values, densidad, type = "l", lwd = 2, col = "blue",
+     main = "Distribución Z con Zona de Rechazo",
+     xlab = "Valores Z", ylab = "Densidad")
+
+# Rellenar la zona de rechazo (cola izquierda)
+polygon(c(min(z_values), z_values[z_values <= z_critico], z_critico),
+        c(0, densidad[z_values <= z_critico], 0),
+        col = "red", border = NA, density = 20, angle = 45)
+
+# Añadir la línea vertical en el valor crítico
+abline(v = z_critico, col = "red", lty = 2, lwd = 2)
+
+# Añadir la leyenda
+legend("topright", legend=c("Zona de Rechazo", "Z observado"),
+       fill=c("red", NA), border=c(NA, "black"),
+       col=c(NA, "darkgreen"), pch=c(NA, 19), lty=c(NA, 1), cex=0.6)  
+
+
+# Agregar los valores de los intervalos de confianza en las líneas rojas
+text(-1.880794, 0.05, labels="-1.8807", pos=3.5, col="black", cex=0.7)
+
+# Marcar el valor de Z observado
+points(z_prueba, dnorm(z_prueba), col = "darkgreen", pch = 19)
+text(z_prueba, dnorm(z_prueba) + 0.02, labels = paste("Z observado =", round(z_prueba, 2)), pos = 3, cex = 0.5)
+
+```
+
+
+### d) **Halle un intervalo del 95% de confianza para $\rho$**  
+
+
+```{r}
+cor.test(PD2$X, PD2$Y, method = "p", alternative = "t", conf.level = 0.95)$conf
+```
+
+$IC(\rho) = [0.9291982, 0.9970143]$  
+
+El intervalo que va de 0.929 a 0.997 brinda un 95% de confianza de contener a la correlación entre el porcentaje de azúcar y el porcentaje de sacarosa.
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+

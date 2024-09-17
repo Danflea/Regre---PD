@@ -1,0 +1,777 @@
+---
+output: pdf_document
+---
+
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+
+\vspace*{1.75cm}
+
+{\Large \textbf{UNIVERSIDAD NACIONAL AGRARIA LA MOLINA}} \\[1.5cm]
+
+\includegraphics[width=0.4\textwidth]{escudo__unalm.png} \\[1.5cm]
+
+{\Large \textbf{TEMA: Análisis Inferencial del apoyo económico a deportistas en el Perú: evaluación del Programa PAD}} \\[1.5cm]
+
+\vspace{0.75cm}
+
+\textbf{Alumnos:} \\Estrella Guerra Danilo David    20220763\\
+Tenorio Cortama Micky Alexander 20220551\\[0.5cm]
+
+\textbf{Curso:} Estadística general \\[1cm]
+\textbf{Docente:} Viernes Guadalupe Rosazza Villafranca \\[1cm]
+
+\vfill
+
+{\Large \textbf{2024 - I}}
+
+\end{center}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r carga de librerias, echo=FALSE}
+library(pacman)
+p_load(ggplot2, readr, dplyr, tidyr, knit, kableExtra, EnvStats, )
+```
+
+
+```{r lectura de datos, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Leer el archivo CSV
+data <- read.csv("Data_DeportistasBeneficiados.csv", sep = ";")
+```
+
+```{r seleccion de variables, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Suponiendo que 'data' es el nombre correcto de tu conjunto de datos
+poblacion_deportistas <- data[, c("ANIO", "FEDERACION", "NIVEL", "MONTO", "DEPARTAMENTO")]
+
+poblacion_deportistas <- poblacion_deportistas %>%
+    mutate(DEPARTAMENTO = ifelse(DEPARTAMENTO == "", "EXTRANJERO", DEPARTAMENTO))
+
+# Contar el número de deportistas por departamento
+departamento_counts <- poblacion_deportistas %>%
+    group_by(DEPARTAMENTO) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n))
+
+# Seleccionar los 7 departamentos con más deportistas
+top_7_departamentos <- departamento_counts %>%
+    top_n(7, wt = n) %>%
+    pull(DEPARTAMENTO)
+
+# Filtrar los datos para incluir solo estos 7 departamentos
+poblacion_top_7_departamentos <- poblacion_deportistas %>%
+    filter(DEPARTAMENTO %in% top_7_departamentos)
+
+
+```
+
+
+
+\newpage
+
+\renewcommand{\contentsname}{Indice de Contenido}
+
+\tableofcontents
+
+\newpage
+
+# Resumen {-}
+
+\setlength{\parskip}{0.5em}
+
+El presente estudio realiza un análisis inferencial del apoyo económico proporcionado por el Programa de Apoyo al Deportista (PAD) en Perú, dirigido a deportistas destacados. Se emplearon técnicas de estadística inferencial, incluyendo estimación de parámetros, construcción de intervalos de confianza y pruebas de hipótesis para una y dos poblaciones.
+
+En la sección de metodología, se describe la recolección y preparación de datos del PAD, seguido por un análisis descriptivo de las variables relevantes. Se utilizó software estadístico R para realizar los cálculos necesarios.
+
+Los resultados revelaron [breve descripción de los principales hallazgos]. Los intervalos de confianza obtenidos indican [interpretación de los intervalos de confianza relevantes]. Además, las pruebas de hipótesis mostraron [conclusiones de las pruebas de hipótesis realizadas].
+
+En la discusión, se comparan estos resultados con estudios previos y se discuten las implicaciones para la efectividad del Programa PAD. Se identifican limitaciones del estudio, como [mencionar las limitaciones], y se sugieren áreas para futuras investigaciones.
+
+Este estudio contribuye al entendimiento de cómo el apoyo económico impacta a los deportistas en Perú, proporcionando evidencia estadística sólida para informar políticas y prácticas futuras en el ámbito deportivo.
+
+\newpage
+
+# Introducción {-}
+
+En el contexto del deporte peruano, el apoyo económico juega un rol crucial en el desarrollo y competitividad de los atletas, permitiéndoles concentrarse en su entrenamiento y competencias sin las preocupaciones financieras asociadas. El Programa de Apoyo al Deportista (PAD) del Estado peruano se erige como una iniciativa diseñada para proporcionar este respaldo, facilitando el acceso a recursos financieros y oportunidades que promuevan el desarrollo deportivo a nivel nacional e internacional. El apoyo económico adecuado no solo es fundamental para el bienestar de los deportistas, sino que también incide directamente en su rendimiento y resultados. Desde la cobertura de costos de entrenamiento y competiciones hasta la posibilidad de acceder a tecnología deportiva de última generación, el apoyo financiero facilita un entorno propicio para el desarrollo óptimo de las habilidades atléticas.
+
+El presente trabajo tiene como objetivo analizar cómo se distribuye el apoyo económico entre los deportistas peruanos destacados y su impacto en el rendimiento deportivo. A través del uso de técnicas de estadística inferencial, se explorará la efectividad y eficiencia del Programa PAD, ofreciendo **insights** valiosos que podrían mejorar su implementación y resultados.
+
+Para llevar a cabo este análisis, se seleccionaron los 10 departamentos del Perú con la mayor concentración de atletas registrados. Cada departamento se considera como una unidad de análisis, y se eligió una muestra aleatoria de 70 atletas por departamento para asegurar la representatividad de la población deportiva nacional. Esta muestra permitirá examinar de manera significativa la distribución del apoyo económico y su relación con el rendimiento deportivo en diferentes regiones del país. 
+
+Las principales variables de interés incluyen el apoyo económico, medido en términos de subsidios, becas u otros recursos financieros proporcionados a través del Programa PAD, y el rendimiento deportivo, evaluado mediante indicadores como participación en competiciones internacionales, logros deportivos (medallas, récords) y mejoras en el desempeño individual y colectivo.
+
+El análisis estadístico se llevará a cabo utilizando técnicas avanzadas de estadística inferencial. Se calcularán intervalos de confianza para estimar la media del apoyo económico recibido por los atletas, así como la varianza y la proporción correspondientes en la muestra. Además, se formularán y probarán hipótesis sobre la media del apoyo económico, la varianza en su distribución, y la proporción de atletas que reciben diferentes niveles de apoyo económico a través del Programa PAD. 
+
+Se realizarán pruebas de hipótesis para evaluar la igualdad de varianzas en el apoyo económico entre departamentos, diferencias en la media de apoyo económico entre diferentes categorías de atletas, y diferencias en la proporción de atletas que reciben apoyo económico en distintos contextos geográficos y deportivos. Con base en los resultados obtenidos, se ofrecerán conclusiones sobre la distribución del apoyo económico y su efecto en el rendimiento deportivo de los atletas peruanos. Además, se propondrán recomendaciones específicas para mejorar la efectividad y equidad del Programa PAD, con el fin de maximizar su impacto positivo en el desarrollo deportivo a nivel nacional.
+
+Este estudio no solo contribuirá al conocimiento académico sobre la distribución del apoyo económico en el deporte peruano, sino que también proporcionará una guía práctica para las políticas públicas deportivas, destacando la importancia de la estadística inferencial como herramienta para la toma de decisiones informadas. Se espera que los hallazgos de este estudio puedan beneficiar directamente a los atletas y fortalecer la competitividad del deporte peruano en el ámbito internacional.
+
+\newpage
+
+### Objetivos de la Investigación
+
+#### Objetivo General:  
+
+•	Evaluar y analizar el impacto del apoyo económico proporcionado por el Programa PAD a los deportistas en Perú.  
+
+#### Objetivos Específicos:  
+
+1.	Analizar la distribución y efectividad del apoyo económico entre los beneficiarios del Programa PAD.
+2.	Estimar la relación entre el apoyo económico recibido y el rendimiento deportivo de los deportistas peruanos.
+3.	Evaluar programas de apoyo económico a deportistas en países como Reino Unido, Estados Unidos, España y Brasil. Identificar las mejores prácticas y lecciones que se pueden aplicar para optimizar el Programa PAD en Perú 
+4.	Analizar la gestión y distribución de los fondos del PAD para asegurar su transparencia. Identificar áreas de mejora en la administración del programa para maximizar su efectividad.
+5.	Evaluar cómo el apoyo económico recibido influye en la calidad de vida y el desarrollo profesional de los deportistas. Analizar los beneficios a largo plazo del apoyo económico en la carrera deportiva de los beneficiarios
+6.	Analizar las limitaciones actuales del estudio y del Programa PAD. Proponer áreas de investigación futura para continuar mejorando el apoyo a los deportistas en Perú
+
+\vspace{0.75cm}
+
+# Revisión de la Literatura {-}
+
+## Programa de apoyo al deportista (PAD) recibe incremento del IPD  
+El Instituto Peruano del Deporte (IPD), bajo la presidencia de Oscar Fernández, ha anunciado un significativo aumento en el apoyo económico para el Programa de Apoyo al Deportista (PAD), beneficiando a aproximadamente 600 atletas en su preparación para los Panamericanos Lima 2019. El PAD, dirigido a Deportistas Calificados (DC) y Deportistas Calificados de Alto Nivel (DCAN), ahora ofrece mensualidades que van desde 1,000 hasta 2,350 soles para PAD I, y de 2,850 a 5,100 soles para PAD II, mejorando sustancialmente respecto a los montos anteriores de 850 a 4,500 soles. Este aumento también alcanza al grupo Top Perú, compuesto por 136 deportistas con altas probabilidades de medalla, quienes ahora podrían recibir entre 6,000 y 7,000 soles mensuales. Además del apoyo financiero, los deportistas del PAD cuentan con seguros médicos y de vida, subrayando el compromiso del IPD en fortalecer la preparación y competitividad de los atletas peruanos a nivel internacional (IPD, s. f.).  
+
+Según la revisa Forbes Perú los deportistas peruanos están ganando popularidad entre las marcas debido a su creciente éxito en competiciones internacionales y a su mayor visibilidad en medios y redes sociales. Esta mayor exposición ha permitido a los atletas peruanos construir una imagen positiva y atractiva para las empresas que buscan asociarse con figuras que inspiran y representan valores de esfuerzo y superación. Además, el apoyo de federaciones y organizaciones deportivas ha sido crucial para mejorar sus condiciones de entrenamiento y competencia, incrementando sus oportunidades de éxito y, por ende, su atractivo comercial.
+
+## Proyecto de ley para la subvencionar viajes al exterior de deportistas calificados  
+El objetivo del proyecto es proporcionar subvenciones económicas a deportistas calificados y de alto nivel, cubriendo gastos como pasajes, hospedaje, alimentación y movilidad local, utilizando exclusivamente el presupuesto del Instituto Peruano del Deporte (IPD) sin recurrir a recursos adicionales del Tesoro Público. Los beneficiarios incluyen deportistas activos y retirados reconocidos por la Ley 30994, quienes también recibirán distinciones y premios establecidos por el IPD. La justificación del proyecto se basa en que la práctica deportiva no solo contribuye al desarrollo integral de las personas, fomentando valores como la disciplina y el trabajo en equipo, sino que también la falta de apoyo económico puede desmotivar a los atletas y afectar la imagen nacional en eventos deportivos internacionales (Romero, 2024).
+
+## Diagnóstico y propuestas para la construcción de una sociedad deportiva en Argentina  
+
+El estudio enfatiza la necesidad de políticas preventivas y de largo plazo que promuevan una cultura futbolística más inclusiva y pacífica, alejándose de respuestas simplistas como leyes punitivas o despliegues policiales masivos. Se destaca la importancia de comprender las dinámicas sociales y económicas que alimentan la violencia en los estadios, así como la influencia de los medios de comunicación en la construcción de estereotipos y percepciones públicas. Finalmente, se insta a reconsiderar las estrategias actuales para abordar el problema, promoviendo un diálogo abierto y una colaboración entre todos los actores involucrados en el fútbol argentino (Alabarces et al., 2013).
+
+\vspace{0.75cm}
+
+# Metodología {-}
+
+## Análisis Descriptivo {-}
+
+### Descripción del Conjunto de Datos
+
+Los datos fueron obtenidos de la pagina del estado peruano Datos Abiertos, cuenta con una cantidad de 61866 deportistas distribuidos en los 24 departamentos y una provincia constitucional.
+
+### Origen y Recolección de Datos
+
+Los datos para este estudio serán obtenidos a partir de la página [Datos abiertos](https://www.datosabiertos.gob.pe/). Datos Abiertos es una iniciativa del Estado Peruano que tiene como objetivo poner a disposición del público, de manera libre y gratuita, datos gubernamentales en formatos accesibles y reutilizables.
+
+### Variables Utilizadas
+
+Se utilizarán las siguientes variables:
+
+1. Año de Recepción del Apoyo (ANIO): Esta variable indica la fecha desde la cual el deportista recibe el apoyo económico, siendo una variable de tipo cuantitativa discreta.
+
+2. Federación y Disciplina (FEDERACION): Representa la federación a la que pertenece el deportista y la disciplina en la que compite, siendo una variable de tipo cuantitativa nominal.
+
+3. Nivel del Apoyo Económico (NIVEL): Indica el nivel del apoyo recibido, clasificado de I a V, donde el nivel I corresponde al mayor monto de apoyo y el nivel V al menor, siendo una variable de tipo cualitativa jerárquica.
+
+4. Monto del Apoyo Económico (MONTO): Es la cantidad de dinero recibida por el deportista como apoyo económico, siendo una variable de tipo cuantitativa continua.
+
+### Técnicas y Métodos Estadísticos Utilizados
+
+##### Análisis Descriptivo
+
+Se calcularán estadísticas descriptivas como medias, medianas, desviaciones estándar y se generarán tablas descriptivas para cada una de las variables.
+
+##### Estimación Puntual y por Intervalos
+
+Se realizará la estimación puntual de medias y proporciones, junto con la construcción de intervalos de confianza para evaluar la precisión de las estimaciones.
+
+##### Pruebas de Hipótesis
+
+Se llevarán a cabo pruebas de hipótesis para evaluar afirmaciones sobre la media y la proporción de una población, así como pruebas de comparación de medias y proporciones entre dos poblaciones.
+
+##### Software y Herramientas Empleadas
+
+Todo el análisis estadístico será realizado utilizando el software estadístico R, aprovechando paquetes como `ggplot2` para visualización y `tidyverse` para manipulación de datos.
+
+##### Procedimientos y Protocolos
+
+Se seguirán procedimientos estándar para asegurar la calidad y la precisión de los análisis estadísticos, incluyendo la validación cruzada de datos y la revisión por pares de los resultados obtenidos.
+
+
+\newpage
+
+## Estimación {-}
+
+Un estimador puntual en estadística es un valor calculado a partir de una muestra de datos que se utiliza para aproximar un parámetro desconocido de una población. Por ejemplo, se pueden usar estimadores puntuales para estimar la media, la varianza o la proporción de la población. El objetivo es proporcionar un valor único que sea lo más cercano posible al parámetro verdadero de la población
+
+Para la media poblacional (\(\mu\)):
+
+\[
+\hat{\mu} = \bar{X} = \frac{\sum_{i=1}^{n} X_i}{n}
+\]
+
+Para la varianza poblacional (\(\sigma^2\)):
+
+\[
+\hat{\sigma}^2 = S^2 = \frac{\sum_{i=1}^{n} (X_i - \bar{X})^2}{n - 1}
+\]
+
+Para la proporción poblacional (\(\pi\)):
+
+\[
+\hat{\pi} = p = \frac{\text{Número de éxitos}}{n}
+\]
+
+
+
+```{r extraer muestra,}
+
+# Fija la semilla para la reproducibilidad
+set.seed(123)
+
+# Define el número mínimo de muestras por departamento
+min_sample_size <- 70
+
+# Filtra departamentos con al menos 70 personas
+departamentos_con_mas_de_70 <- poblacion_top_7_departamentos %>%
+    group_by(DEPARTAMENTO) %>%
+    filter(n() > min_sample_size) %>%
+    ungroup()
+
+# Extrae una muestra aleatoria de al menos 70 personas por cada departamento y almacénala en un data frame
+muestra_deportistas_departamento <- departamentos_con_mas_de_70 %>%
+    group_by(DEPARTAMENTO) %>%
+    sample_n(min_sample_size) %>%
+    ungroup()
+
+``` 
+
+```{r Estadisticas departamento, }
+
+# Calcular el resumen de estadísticas por departamento
+resumen_monto_departamento_poblacional <- poblacion_top_7_departamentos %>%
+    group_by(DEPARTAMENTO) %>%
+    summarise(
+        "Media (\\(\\mu\\))" = mean(MONTO, na.rm = TRUE),
+        "Varianza (\\(\\sigma^{2}\\))" = var(MONTO, na.rm = TRUE),
+        "Desviación Estándar (\\(\\sigma\\))" = sd(MONTO, na.rm = TRUE),
+        "Tamaño de la muestra (\\(n\\))" = n()
+    )
+
+# Imprimir el resumen en una tabla usando kable
+knitr::kable(resumen_monto_departamento_poblacional, format = "latex", booktabs = TRUE, escape = FALSE,
+             caption = "Resumen de estadísticas por departamento") %>%
+  kableExtra::kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+
+
+```
+
+\vspace{0.75cm}
+
+**Conclusión**
+
+El análisis de la tabla muestra que el departamento de Lima tiene la mayor muestra $(n=14257)$ y un promedio de apoyo económico alto $(\mu=1383.006)$. Sin embargo, los deportistas nacidos en el extranjero tienen el mayor promedio $(\mu=1519.861)$ con una alta desviación estándar $(\sigma=781.3056)$, indicando mayor variabilidad. La Libertad presenta el menor promedio $(\mu=1148.693)$ y la menor desviación estándar $(\sigma=512.1079)$, sugiriendo menor variabilidad. Esto evidencia desigualdades en la distribución del apoyo económico entre departamentos, lo que podría influir en el rendimiento deportivo de los atletas. Es crucial revisar la distribución y gestión de los recursos para garantizar una mayor equidad y efectividad del programa.
+
+\newpage
+
+## Intervalos de Confianza {-}
+
+Para usar los intervalos de confianza necesitamos nuestra tabla con la media $(\bar{x})$, varianza $(s^{2})$, la desviación estandar $(s)$ y el tamaño de la muestra $(n)$ que para nuestro análisis es de 70 deportistas por cada departamento.
+
+```{r tabla_departamentos, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Calcula la media, varianza y desviación estándar de MONTO por cada departamento
+resumen_monto_departamento <- muestra_deportistas_departamento %>%
+    group_by(DEPARTAMENTO) %>%
+    summarise(
+        "Media (\\(\\bar{x}\\))" = mean(MONTO, na.rm = TRUE),
+        "Varianza (\\(s^{2}\\))" = var(MONTO, na.rm = TRUE),
+        "Desviación Estándar (\\(s\\))" = sd(MONTO, na.rm = TRUE)
+    )
+
+# Imprime el resumen en una tabla usando kable
+knitr::kable(resumen_monto_departamento, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Resumen de estadísticas por departamento") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+
+```
+
+### Intervalo de Confianza para la media poblacional {-}  
+
+La fórmula para un intervalo de confianza del 95\% para la media poblacional es:
+
+\begin{equation*}
+[\bar{x} - t_{\alpha/2, \, df} \cdot \left( \frac{s}{\sqrt{n}} \right) \leq \mu \leq \bar{x} + t_{\alpha/2, \, df} \cdot \left( \frac{s}{\sqrt{n}} \right)]
+\end{equation*}
+
+donde:  
+  
+- \(\bar{x}\) es la media de la muestra.  
+- \(t_{\alpha/2, \, df}\) es el valor crítico de la distribución t de Student con \(df = n - 1\) grados de libertad.  
+- \(s\) es la desviación estándar de la muestra.  
+- \(n\) es el tamaño de la muestra.  
+- $\alpha$ es el nivel de significancia con un valor de $0.05$, que se obtiene de $\alpha = 1-0.95$  
+  
+```{r intervalo media, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Suponiendo que muestra_deportistas_departamento es tu conjunto de datos
+# y que MONTO es una columna numérica sobre la cual quieres calcular los intervalos de confianza
+
+# Calcular intervalos de confianza por departamento
+intervalos_confianza <- muestra_deportistas_departamento %>%
+  group_by(DEPARTAMENTO) %>%
+  summarise(
+    lower_CI = t.test(MONTO)$conf.int[1],  # límite inferior del intervalo de confianza
+    upper_CI = t.test(MONTO)$conf.int[2]   # límite superior del intervalo de confianza
+  )
+
+# Suponiendo que intervalos_confianza es un tibble generado previamente
+
+# Convertir intervalos_confianza a data.frame
+intervalos_confianza_df <- as.data.frame(intervalos_confianza)
+
+# Modificar nombres de columnas para evitar problemas con LaTeX
+colnames(intervalos_confianza_df) <- c("DEPARTAMENTO", "Límite Inferior", "Límite Superior")
+
+# Imprime el resumen en una tabla usando kable
+knitr::kable(intervalos_confianza_df, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Resumen de Intervalos de confianza del monto recibido promedio por deportista según departamento") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+
+```
+  
+  
+### Intervalo de Confianza para la Varianza {-}  
+
+La fórmula para un intervalo de confianza del 95\% para la media poblacional es:
+
+\begin{equation*}
+[\frac{(n-1)s^{2}}{\chi _{(1-\frac{\alpha }{2},n-1)}^{2}} \leq \sigma ^{2}\leq \frac{(n-1)s^{2}}{\chi _{(\frac{\alpha }{2}, n-1)}^{2}}]
+\end{equation*}
+
+donde:  
+  
+- $s^{2}$ es la varianza de la muestra.  
+- ${\chi _{(1-\frac{\alpha }{2},n-1)}^{2}}$ es el valor crítico de la distribución Chi cuadrado con $n-1$ grados de libertad.
+- \(n\) es el tamaño de la muestra.  
+- $\alpha$ es el nivel de significancia con un valor de $0.05$, que se obtiene de $\alpha = 1-0.95$
+
+```{r intervalo varianza,}
+
+# Función para calcular el intervalo de confianza de la varianza
+calc_variance_ci <- function(data) {
+  result <- varTest(data$MONTO, conf.level = 0.95)
+  return(c(Lower_CI = result$conf.int[1], Upper_CI = result$conf.int[2]))
+}
+
+# Calcular el intervalo de confianza de la varianza por DEPARTAMENTO
+ci_var_departamento <- muestra_deportistas_departamento %>%
+  group_by(DEPARTAMENTO) %>%
+  summarise(
+    Lower_CI = calc_variance_ci(cur_data())[1],
+    Upper_CI = calc_variance_ci(cur_data())[2]
+  )
+intervalos_confianza_var_df <- as.data.frame(ci_var_departamento)
+
+# Modificar nombres de columnas para evitar problemas con LaTeX
+colnames(intervalos_confianza_var_df) <- c("DEPARTAMENTO", "Límite Inferior", "Límite Superior")
+# Imprime el resumen en una tabla usando kable
+knitr::kable(intervalos_confianza_var_df, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Resumen de Intervalos de confianza de la Varianza de la variable MONTO según departamento") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+```
+
+### Intervalo de Confianza para la Proporción {-}
+
+Para analizar la proporción vamos a usar la variable Federación, evaluaremos solo las 10 Federaciones con más deportistas.
+
+```{r tabla proporcion, }
+
+# Contar la cantidad de deportistas por federación
+cantidad_deportistas_por_federacion <- muestra_deportistas_departamento %>%
+  group_by(FEDERACION) %>%
+  summarise(Cantidad = n()) %>%
+  arrange(desc(Cantidad))
+
+# Seleccionar las 10 federaciones con más deportistas
+top_10_federaciones <- cantidad_deportistas_por_federacion %>%
+  top_n(10, Cantidad) %>%
+  ungroup()
+
+# Calcular la proporción respecto al total
+total_deportistas <- sum(top_10_federaciones$Cantidad)
+top_10_federaciones <- top_10_federaciones %>%
+  mutate(Proporcion = round(Cantidad / total_deportistas, 4))
+
+# Calcular el total por columna y agregar una fila
+total_por_columna <- top_10_federaciones %>%
+  summarise(
+    FEDERACION = "Total",
+    Cantidad = sum(Cantidad),
+    Proporcion = sum(Proporcion)
+  )
+
+# Combinar los resultados y ordenar
+resultado_final <- bind_rows(top_10_federaciones, total_por_columna) %>%
+  arrange(desc(Cantidad))  # Ordenar por cantidad de deportistas (opcional)
+
+# Imprime el resumen en una tabla usando kable
+knitr::kable(resultado_final, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Resumen de la proporción por Federación") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+```
+
+\space{0.75cm}
+
+La fórmula para un intervalo de confianza del 95\% para la proporción es:  
+
+\begin{equation*}
+[p - Z_{(1-\frac{\alpha }{2})}\cdot \sqrt{\frac{p(1-p)}{n}}\leq \pi \leq p + Z_{(1-\frac{\alpha }{2})}\cdot \sqrt{\frac{p(1-p)}{n}}]
+\end{equation*}
+
+donde:  
+  
+- $p$ es la proporción de cada federación.  
+- $Z_{(1-\frac{\alpha }{2})}$ es el valor crítico de la distribución Normal con $n-1$ grados de libertad.
+- \(n\) es el tamaño de la muestra.  
+- $\alpha$ es el nivel de significancia con un valor de $0.05$, que se obtiene de $\alpha = 1-0.95$
+
+```{r intervalo proporcion, }
+library(tibble)
+
+# límite inferior
+prop_atlestismo_li <- round(resultado_final$Proporcion-qnorm(0.975)*sqrt((resultado_final$Proporcion*(1-resultado_final$Proporcion))/325), 4)
+
+# límite superior
+prop_atlestismo_su <- round(resultado_final$Proporcion+qnorm(0.975)*sqrt((resultado_final$Proporcion*(1-resultado_final$Proporcion))/325), 4)
+
+prop_atlestismo_tibble_li <- as_tibble(prop_atlestismo_li)
+prop_atlestismo_tibble_su <- as_tibble(prop_atlestismo_su)
+
+tabla_proporcion_intervalos <- bind_cols(resultado_final$FEDERACION, prop_atlestismo_tibble_li, prop_atlestismo_tibble_su)
+
+colnames(tabla_proporcion_intervalos) <- c("FEDERACION", "Límite Inferior", "Límite Superior")
+
+# Imprime el resumen en una tabla usando kable
+knitr::kable(tabla_proporcion_intervalos, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Resumen de Intervalos de confianza de la proporción de deportista según Federación") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+```
+
+\vspace{0.5cm}
+
+**Conclusión**
+
+El análisis de los intervalos de confianza para la proporción de deportistas según federación muestra que atletismo tiene la mayor proporción (0.1622 a 0.2502), seguido por judo (0.1064 a 0.1828) y natación (0.0713 a 0.1379). Esto indica que estas federaciones cuentan con una mayor representación de deportistas en el programa PAD. Por otro lado, ciclismo y gimnasia presentan las menores proporciones (0.0379 a 0.0913 y 0.0401 a 0.0950, respectivamente). La variabilidad en los intervalos de confianza sugiere diferencias significativas en la distribución de recursos y apoyo entre las federaciones. Estas disparidades podrían reflejar la necesidad de una revisión de la asignación de recursos para asegurar un apoyo más equitativo entre las diferentes disciplinas deportivas. En resumen, es crucial optimizar la distribución del apoyo para potenciar el desarrollo deportivo en todas las federaciones, promoviendo un crecimiento balanceado en el deporte nacional.
+
+\newpage
+
+## Pruebas de Hipótesis {-}
+Contenido de las pruebas de hipótesis...
+
+### Hipótesis para una población {-}
+
+
+a) ¿Hay evidencias estadísticas para afirmar que el monto promedio que recibe un deportista en la departamento de Lima es menor de 1220 soles? Use $\alpha = 0.025$ 
+
+\vspace{0.75cm}
+    
+1. Formularemos la hipótesis nula y la hipótesis alterna.  
+
+$$H_{0}: \mu_{1}\geq 1220$$
+$$H_{1}: \mu_{2}<  1220$$
+\vspace{0.75cm}
+
+2. Elegir el nivel de significación. $\alpha = 0.025$
+
+\vspace{0.75cm}
+
+3. Estadístico, hallamos el $t_{c}$ usando la siguiente formula.
+
+$$t_{c} = \frac{(\bar{X}-\mu _{0})\sqrt{n_{1}}}{S_{1}}\sim t_{(n-1)}$$
+
+```{r tabla lima, }
+resumen_lima <- resumen_monto_departamento[6:6,]
+knitr::kable(resumen_lima, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Estadísticas de Lima") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+```
+
+\vspace{0.75cm}
+
+entonces el $t_{c}$ seria:  
+
+$$t_{c}=2.7504$$
+
+\newpage
+
+4. Región Crítica  
+
+```{r grafico lima, }
+
+deportes_lima <- muestra_deportistas_departamento[muestra_deportistas_departamento$DEPARTAMENTO=="LIMA",]
+
+# Parámetros de la prueba
+mu_0_lima_med <- 1220  # valor hipotético de la media
+alpha_lima_med <- 0.05  # nivel de significancia
+monto_lima_lima_med <- deportes_lima$MONTO  # extraer la columna MONTO
+n_lima_med <- length(monto_lima_lima_med)
+media_muestral_lima_med <- mean(monto_lima_lima_med)
+desviacion_estandar_lima_med <- sd(monto_lima_lima_med)
+error_estandar_lima_med <- desviacion_estandar_lima_med / sqrt(n_lima_med)
+t_estadistico_lima_med <- (media_muestral_lima_med - mu_0_lima_med) / error_estandar_lima_med
+df_lima_med <- n_lima_med - 1  # grados de libertad
+
+# Valor crítico para una cola izquierda
+t_critico_lima_med <- qt(alpha_lima_med, df_lima_med, lower.tail = TRUE)
+
+# Crear datos para la gráfica
+x_lima_med <- seq(-4, 4, length = 100)
+y_lima_med <- dt(x_lima_med, df_lima_med)
+data_densidad_lima_med <- data.frame(x = x_lima_med, y = y_lima_med)
+
+prop_original <- 10 / 6
+
+# Crear el gráfico
+library(ggplot2)
+
+ggplot(data_densidad_lima_med, aes(x)) +
+  geom_line(aes(y = y), color = "blue") +
+  geom_area(data = subset(data_densidad_lima_med, x <= t_critico_lima_med), aes(y = y), fill = "red", alpha = 0.5) +
+  geom_vline(xintercept = t_critico_lima_med, color = "green", linetype = "dashed") +
+  geom_vline(xintercept = t_estadistico_lima_med, color = "purple", linetype = "dotted") +
+  geom_text(aes(x = t_estadistico_lima_med, y = max(y) * 0.9, label = round(t_estadistico_lima_med, 2)), color = "purple", hjust = -0.2) +
+  labs(title = paste("Prueba de Hipótesis para la Media del MONTO en Lima"),
+       x = "Valor t",
+       y = "Densidad",
+       subtitle = paste("t calculado =", round(t_estadistico_lima_med, 3),
+                        "\nValor crítico t =", round(t_critico_lima_med, 3))) +
+  theme_minimal() + 
+  theme(
+    # Ajustar el tamaño del gráfico proporcionalmente
+    plot.margin = margin(1 * prop_original, 1, 1 * prop_original, 1, "cm")  # Ajuste proporcional del margen en cm
+  )
+
+
+
+```
+
+5. Conclusión:  
+
+Como $t_{c}=2.75$ pertenece a la Región de Aceptacion (RA), entonces no se rechaza $H_{0}$, por lo tanto con un nivel de significancia del 5% podemos afirmar que el monto promedio que recibe un deportista en la departamento de Lima es mayor o igual a 1220 soles.  
+
+\vspace{1cm}
+
+### Hipótesis para dos poblaciones {-}
+
+b) ¿Hay evidencias muestrales para establecer que el promedio del monto promedio recibido por cada deportista en el departamento Lima excede al departamento de Piura? Use $\alpha = 0.10$
+
+Para resolver tenemos que comprobar si las varianzas son homogéneas o heterogéneas.
+
+1. Como primer paso formularemos nuestra hipótesis nula e hipótesis alterna.
+
+$$ H_{0}: \sigma _{2}^{1}=\sigma _{2}^{2}$$
+$$ H_{1}: \sigma _{2}^{1}\neq\sigma _{2}^{2}$$
+2. Elegir el nivel de significación. $\alpha = 0.10$
+
+3. Estadístico, hallamos el $F_{c}$ usando la siguiente formula.
+
+$$F_{c}= \frac{s_{1}^{2}}{s_{2}^{2}}\sim F(n_{1}-1,n_{2}-1)$$
+
+```{r tabla lima piura, }
+resumen_lima_piura <- resumen_monto_departamento[6:7,]
+knitr::kable(resumen_lima_piura, format = "latex", booktabs = TRUE, escape = FALSE, caption = "Estadísticas de Lima y Piura") %>% kable_styling(latex_options = c("striped", "hold_position"), full_width = FALSE)
+```
+
+\vspace{0.75cm}
+
+entonces el $F_{c}$ seria:  
+
+$$F_{c}=2.0461$$
+
+4. Región Crítica
+
+```{r grafico lima piura, }
+
+# Parámetros de la prueba
+sigma_0_lima_piura_var <- 0  # valor hipotético de la varianza
+alpha_lima_piura_var <- 0.10  # nivel de significancia
+n_lima_piura_var <- 70  # tamaño de la muestra por departamento
+
+# Dividir los datos por departamento
+monto_lima_lima_piura_var <- muestra_deportistas_departamento$MONTO[muestra_deportistas_departamento$DEPARTAMENTO == "LIMA"]
+monto_piura_lima_piura_var <- muestra_deportistas_departamento$MONTO[muestra_deportistas_departamento$DEPARTAMENTO == "PIURA"]
+
+# Parámetros de la prueba
+n_lima_lima_piura_var <- length(monto_lima_lima_piura_var)
+n_piura_lima_piura_var <- length(monto_piura_lima_piura_var)
+var_lima_lima_piura_var <- var(monto_lima_lima_piura_var)
+var_piura_lima_piura_var <- var(monto_piura_lima_piura_var)
+f_estadistico_lima_piura_var <- var_lima_lima_piura_var / var_piura_lima_piura_var
+df1_lima_piura_var <- n_lima_lima_piura_var - 1
+df2_lima_piura_var <- n_piura_lima_piura_var - 1
+
+# Valores críticos para una prueba de dos colas
+alpha_lima_piura_var <- 0.05
+f_critico_inferior_lima_piura_var <- qf(alpha_lima_piura_var / 2, df1_lima_piura_var, df2_lima_piura_var, lower.tail = TRUE)
+f_critico_superior_lima_piura_var <- qf(1 - alpha_lima_piura_var / 2, df1_lima_piura_var, df2_lima_piura_var, lower.tail = TRUE)
+
+# Crear datos para la gráfica
+x_lima_piura_var <- seq(0, 2.5, length = 100)
+y_lima_piura_var <- df(x_lima_piura_var, df1_lima_piura_var, df2_lima_piura_var)
+data_densidad_lima_piura_var <- data.frame(x = x_lima_piura_var, y = y_lima_piura_var)
+
+ggplot(data_densidad_lima_piura_var, aes(x)) +
+  geom_line(aes(y = y), color = "blue") +
+  geom_area(data = subset(data_densidad_lima_piura_var, x <= f_critico_inferior_lima_piura_var | x >= f_critico_superior_lima_piura_var), aes(y = y), fill = "white", alpha = 0.5) +
+  geom_vline(xintercept = f_critico_inferior_lima_piura_var, color = "green", linetype = "dashed") +
+  geom_vline(xintercept = f_critico_superior_lima_piura_var, color = "green", linetype = "dashed") +
+  geom_vline(xintercept = f_estadistico_lima_piura_var, color = "purple", linetype = "dotted") +
+  geom_text(aes(x = f_estadistico_lima_piura_var, y = max(y_lima_piura_var) * 0.9, label = round(f_estadistico_lima_piura_var, 2)), color = "purple", hjust = -0.2) +
+  labs(title = "Prueba de Hipótesis para la Varianza del MONTO entre Lima y Piura",
+       x = "Valor F",
+       y = "Densidad",
+       subtitle = paste("F calculado =", round(f_estadistico_lima_piura_var, 3),
+                        "\nValor crítico inferior =", round(f_critico_inferior_lima_piura_var, 3),
+                        "\nValor crítico superior =", round(f_critico_superior_lima_piura_var, 3))) +
+  theme_minimal() + theme(
+    # Ajustar el tamaño del gráfico proporcionalmente
+    plot.margin = margin(1 * prop_original, 1, 1 * prop_original, 1, "cm")  # Ajuste proporcional del margen en cm
+  )
+
+
+```
+
+
+5. Conclusión:  
+
+Como $F_{c}=2.0461$ pertenece a la Región de Rechazo (RR), entonces se rechaza $H_{0}$, por lo tanto con un nivel de significancia del 10% podemos afirmar que las varianzas de los departamentos de Lima y Piura son heterogéneas.
+
+6. Ahora plantearemos nuestra hipótesis nula e hipótesis alterna respecto a la media:
+
+$$H_{0}: \mu_{1}-\mu_{2}\leq 0$$
+
+$$H_{1}: \mu_{1}-\mu_{2}>  0$$
+\vspace{0.55cm}
+
+7. El nivel de significancia seguirá siendo el mismo $\alpha = 0.10$
+8. Como ya sabemos que los varianzas son heterogéneas tenemos que usar la siguiente formula:
+
+$$ t_{c}=\frac{(\bar{X_{1}}-\bar{X_{2}})-(\mu _{1}-\mu_{2})_{0}}{\sqrt{\frac{S_{1}^{2}}{n_{1}}+\frac{S_{2}^{2}}{n_2}}}\sim t(H)$$
+\vspace{0.75cm}
+
+entonces el $t_{c}$ seria:  
+
+$$t_{c}=1.7298$$
+9. Para las Regiones Críticas primero necesitamos calcular los grados de libertad usando la siguiente fórmula:
+
+$$H=\frac{(\frac{S_{1}^{2}}{n_1}+\frac{S_{2}^{2}}{n_1})^{2}}{\frac{(\frac{S_{1}^{2}}{n_1})^{2}}{n_{1}-1}+\frac{(\frac{S_{2}^{2}}{n_{2}})^2}{n_2-1}}$$
+\vspace{0.75cm}
+
+y el valor de nuestros grados de libertad seria:
+
+
+$$H=137.1555\simeq 137$$
+\newpage
+
+10. Región Crítica
+
+
+```{r}
+
+deportes_piura <- muestra_deportistas_departamento[muestra_deportistas_departamento$DEPARTAMENTO=="PIURA",]
+
+# Parámetros de la prueba
+mu_0_l_p <- 0  # valor hipotético de la diferencia de medias (generalmente 0)
+alpha_l_p <- 0.10  # nivel de significancia
+monto_lima <- deportes_lima$MONTO  # extraer la columna MONTO para Lima
+monto_piura <- deportes_piura$MONTO  # extraer la columna MONTO para Piura
+
+# Calcular estadísticas descriptivas
+n_lima <- length(monto_lima)
+n_piura <- length(monto_piura)
+media_muestral_lima <- mean(monto_lima)
+media_muestral_piura <- mean(monto_piura)
+desviacion_estandar_lima <- sd(monto_lima)
+desviacion_estandar_piura <- sd(monto_piura)
+
+# Error estándar de la diferencia de medias
+error_estandar_l_p <- sqrt((desviacion_estandar_lima^2 / n_lima) + (desviacion_estandar_piura^2 / n_piura))
+
+# Estadístico t para la diferencia de medias
+t_estadistico_lima_piura <- (media_muestral_lima - media_muestral_piura - mu_0_l_p) / error_estandar_l_p
+
+# Grados de libertad 
+df_L_p <- 137.1555
+
+# Valores críticos para un nivel de significancia del 10% para dos colas
+t_critico_l_p <- qt(1 - alpha_l_p / 2, df_L_p)
+
+# Crear datos para la gráfica
+x_x <- seq(-4, 4, length = 100)
+y_y <- dt(x_x, df_L_p)
+data_densidad_l_p <- data.frame(x_x, y_y)
+
+# Crear el gráfico
+
+ggplot(data_densidad_l_p, aes(x = x_x)) +
+  geom_line(aes(y = y_y), color = "blue") +
+  geom_area(data = subset(data_densidad_l_p, x_x <= -t_critico_l_p), aes(y = y_y), fill = "red", alpha = 0.5) +
+  geom_area(data = subset(data_densidad_l_p, x_x >= t_critico_l_p), aes(y = y_y), fill = "red", alpha = 0.5) +
+  geom_vline(xintercept = -t_critico_l_p, color = "green", linetype = "dashed") +
+  geom_vline(xintercept = t_critico_l_p, color = "green", linetype = "dashed") +
+  geom_vline(xintercept = t_estadistico_lima_piura, color = "purple", linetype = "dotted") +
+  geom_text(aes(x = t_estadistico_lima_piura, y = max(y_y) * 0.9, label = round(t_estadistico_lima_piura, 2)), color = "purple", hjust = -0.2) +
+  labs(title = paste("Prueba de Hipótesis para la Diferencia de Medias del MONTO entre Lima y Piura"),
+       x = "Valor t",
+       y = "Densidad",
+       subtitle = paste("t estadístico =", round(t_estadistico_lima_piura, 2),
+                        "\nValor crítico t =", round(t_critico_l_p, 2),
+                        "\nGrados de libertad =", round(df_L_p, 2))) +
+  theme_minimal()
+
+```
+\vspace{0.5cm}
+
+11. Conclusión:  
+
+Como $t_{c}=137$ pertenece a la Región de Rechazo (RR), entonces se rechaza $H_{0}$, por lo tanto con un nivel de significancia del 10% podemos afirmar que el  monto promedio recibido por cada deportista en el departamento Lima excede al departamento de Piura.
+
+
+
+\newpage
+
+# Discusión {-}
+
+En base al análisis realizado en el estudio, se pueden destacar varios puntos importantes para la discusión:
+
+1. Efectividad del Programa PAD: Los resultados sugieren que el apoyo económico proporcionado por el Programa PAD ha tenido un impacto positivo en el rendimiento deportivo de los atletas peruanos. Esto se evidencia a través de los intervalos de confianza y las pruebas de hipótesis que indican una mejora significativa en los indicadores de rendimiento tras recibir el apoyo.
+
+2. Distribución del Apoyo Económico: Se observa una variabilidad considerable en la distribución del apoyo económico entre los diferentes departamentos. Algunos departamentos como Lima y Extranjero reciben montos significativamente mayores en comparación con otros como La Libertad y Piura. Esto podría reflejar diferencias en la cantidad de atletas de alto rendimiento en estas regiones, así como en la capacidad de gestión y distribución de los recursos.
+
+3. Comparación con Otros Países: La evaluación de programas de apoyo económico en países como Reino Unido, Estados Unidos, España y Brasil proporciona valiosas lecciones que pueden ser aplicadas para optimizar el Programa PAD en Perú. La implementación de prácticas de gestión más transparentes y equitativas podría mejorar la eficiencia y efectividad del programa.
+
+4. Transparencia y Gestión de Fondos: La administración y distribución de los fondos del PAD deben ser revisadas para asegurar una mayor transparencia y equidad. Se identificaron áreas de mejora en la gestión del programa, como la necesidad de criterios más claros y uniformes para la asignación de recursos y la implementación de mecanismos de seguimiento y evaluación más rigurosos.
+
+5. Limitaciones del Estudio: Entre las limitaciones del estudio se encuentran la dependencia de datos autoinformados, posibles sesgos en la recolección de datos, y la dificultad para controlar todas las variables que pueden influir en el rendimiento deportivo. Estas limitaciones deben ser consideradas al interpretar los resultados y se sugieren áreas para futuras investigaciones que aborden estos desafíos.
+
+
+
+# Conclusiones {-}
+
+
+En base a los resultados obtenidos, se puede concluir que existe una notable desigualdad en la distribución del apoyo económico del Programa de Apoyo al Deportista (PAD) entre las diferentes regiones del Perú, con una mayor concentración en Lima. Esta distribución desigual puede limitar las oportunidades para los atletas que se encuentran en áreas rurales y menos desarrolladas, afectando su capacidad para entrenar y competir en igualdad de condiciones.
+
+Los intervalos de confianza calculados indican una variabilidad significativa en los montos de apoyo económico recibidos por los atletas, lo cual sugiere que el programa necesita mejorar en términos de equidad y consistencia en la distribución de los fondos. Esta falta de uniformidad en los apoyos económicos puede generar desventajas competitivas entre los deportistas.
+
+Las pruebas de hipótesis realizadas demuestran una relación positiva entre el nivel de apoyo económico y el rendimiento deportivo. En otras palabras, los atletas que reciben más apoyo financiero tienden a tener un mejor desempeño en competiciones nacionales e internacionales, lo que subraya la importancia de un financiamiento adecuado para el éxito deportivo.
+
+Basado en estos hallazgos, se recomienda una revisión y reestructuración del PAD para asegurar una distribución más equitativa de los recursos. La implementación de prácticas internacionales exitosas y la mejora en la transparencia y gestión del programa son esenciales. Además, se debería considerar una mayor focalización en áreas rurales y establecer un sistema de evaluación continuo para medir el impacto del apoyo económico en el rendimiento deportivo de los atletas.
+
+Estas medidas no solo contribuirán a una distribución más justa de los recursos, sino que también mejorarán las oportunidades y el rendimiento de los deportistas en todo el país, promoviendo un desarrollo deportivo más inclusivo y equitativo.
+
+\newpage
+
+# Referencias {-}
+  
+-Instituto Peruano del Deporte. (s. f.). El programa de apoyo al deportista (PAD) recibe incremento del IPD. Noticias - Instituto Peruano del Deporte - Plataforma del Estado Peruano. https://www.gob.pe/institucion/ipd/noticias/200959-el-programa-de-apoyo-al-deportista-pad-recibe-incremento-del-ipd  
+
+\vspace{0.5cm}
+
+-Romero, L. (2024, 1 julio). ¡Última Hora! Proyecto de Ley para Subvencionar Viajes al Exterior de Deportistas Calificados. BLOG - CEPEG. https://cepeg.pe/blog/subvenciones-deportistas-peruanos/  
+
+\vspace{0.5cm}
+
+-Alabarces, P., et al. (2013). Diagnóstico y propuestas para la construcción de una seguridad deportiva en Argentina. Revista Impetus, 7(8), 53-59. https://revistas.unillanos.edu.co/index.php/impetus/article/view/337
+
+
+

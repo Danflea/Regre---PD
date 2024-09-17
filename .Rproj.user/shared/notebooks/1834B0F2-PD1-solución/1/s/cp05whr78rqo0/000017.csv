@@ -1,0 +1,1 @@
+"0","polygon(c(2.55, x[x >= 2.55]), c(0, y[x >= 2.55]), col=""red"", border=NA)"

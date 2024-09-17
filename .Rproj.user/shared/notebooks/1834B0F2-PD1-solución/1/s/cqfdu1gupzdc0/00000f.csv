@@ -1,0 +1,4 @@
+"0",""
+"0","plot(PD1$X,PD1$Y,main=""Diagrama de Dispersión"","
+"0","     col=""blue"",xlab=""Temperatura"",ylab=""latidos"")"
+"0",""

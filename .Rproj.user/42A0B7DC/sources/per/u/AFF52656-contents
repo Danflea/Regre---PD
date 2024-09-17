@@ -1,0 +1,70 @@
+
+
+# Diagrama de dispersió 
+
+plot(PD1$X, PD1$Y, main="Diagrama de Dispersión", 
+     col= "darkgreen", xlab = "temperatura", ylab = "latidos")
+
+# a) Se puede apreciar una relacion directa entre la temperatura del recinto 
+# y la cantidad de latidos por lagarto.
+
+
+# Coeficiente de correlación de pearson
+
+r <- cor(PD1$X, PD1$Y, method = "p")
+
+
+# b)
+# r = 0.9721215 hay una fuerte asociación 
+
+
+# c)
+
+cor.test(PD1$X, PD1$Y, method = "p", alternative = "t")
+qt(0.02/2, 18)
+qt(c(0.02/2,1-0.02/2), 18)
+
+#d)
+
+cor.test(PD1$X, PD1$Y, method = "p", alternative = "t",
+         conf.level = 0.98)$conf 
+
+
+#e)
+
+modelo <- lm(Y~X, data = PD1) # Nos proporciona los coeficientes de nuestra ecuación lineal
+
+#f y h) 
+anova(modelo)
+qt(0.002, 1, 18, lower.tail = F)
+pt(309.39, 1, 18, lower.tail = F)
+
+
+summary(modelo)
+qt(c(0.02/2, 1-0.02/2), 18)
+
+
+# g)
+
+confint(modelo, level = 0.98)
+
+# i) ic( var^2_E) 
+
+sig <- summary(modelo)$sigma
+n <- nrow(PD1)
+LI <- (n-2)*sig^2/qchisq(1-0.02/2, n-2)
+LS <- (n-2)*sig^2/qchisq(0.02/2, n-2)
+c(LI, LS)
+
+
+# j) coeficiente de determinación
+
+summary(modelo)$r.sq*100    # r^2
+
+
+
+# el 94.5% de la variabilidad del número de latidos 
+# por minuto es explicado por la temperatura en el recinto
+
+
+

@@ -1,0 +1,228 @@
+---
+title: "Solución de la Práctica dirigida 1 de Análisis de Regresión"
+author: "Estrella Guerra, Danilo David"
+date: "`r Sys.Date()`"
+output: pdf_document
+header-includes:
+  - \usepackage{multicol}
+  - \setlength{\columnsep}{1cm}  # Ajusta el espacio entre columnas
+  - \usepackage{amsmath}  # Para ecuaciones matemáticas
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+PD1 <- read_excel("PD1.xlsx")
+```
+
+**Caso**: Zoológico de Australia Se hizo un experimento en un zoológico de Australia para analizar distintas temperaturas en $_{}^{o}\textrm{C}$ (X) de un recinto cerrado y los correspondientes ritmos cardiacos en latidos/minuto (Y) de una especie de lagarto:
+
+## **Análisis de Correlación**
+
+### a) **Elabore el gráfico de dispersión**  
+
+\vspace{0.15cm}
+
+Para elaborar un grafico de dispersión vamos a usar la libreria plot (la función plot es una función genérica para la representación gráfica de objetos en R)
+
+```{r echo=TRUE, fig.align='center', fig.height=3.5, fig.width=4.5}
+
+plot(PD1$X,PD1$Y,main="Diagrama de Dispersión",
+     col="blue",xlab="Temperatura",ylab="Latidos")
+
+```
+
+Se puede apreciar una relación directa entre la temperatura $_{}^{o}\textrm{C}$ del recinto y la cantidad de latidos/minuto de los lagartos.
+
+\newpage
+
+### b) **Estime el coeficiente de correlación**
+
+\texttt{La función cor() en R se utiliza para calcular el coeficiente de correlación entre dos variables. Este coeficiente mide la fuerza y la dirección de la relación lineal entre las dos variables.} 
+
+```{r}
+cor(PD1$X,PD1$Y,method="p")
+
+```
+Hay una fuerte asociación lineal directa entre la temperatura del recinto y la cantidad de latidos/minuto del lagarto.
+
+
+### c) **Pruebe la significancia del coeficiente de correlación**
+
+ 1) 
+ $$H_{0} : \rho = 0$$
+ $$H_{1} : \rho \neq 0 $$
+ 2) 
+ $$\alpha = 0.02$$
+ 3) 
+ 
+```{r}
+cor.test(PD1$X,PD1$Y,method="p",alternative = "t")
+```
+ del anterior codigo hemos obtenido el valor de:  
+ 
+ $t=17.59$, $p-value = 8.732e-13 \approx 0.000$ $<$ $\alpha$  se rechaza $H_{0}$ 
+
+4)
+
+```{r echo=FALSE}
+# Configurar los valores para la gráfica
+x <- seq(-4, 4, length=1000)  # Rango de valores en el eje X
+y <- dt(x, df=18)  # Distribución t de Student con 30 grados de libertad
+
+# Graficar la distribución t
+plot(x, y, type="l", lwd=2, col="blue", main="Distribución t con Zonas de Rechazo",
+     ylab="Densidad", xlab="Valores de t")
+
+# Agregar las zonas de rechazo en -2.55 y 2.55
+abline(v=-2.55, col="red", lwd=2, lty=2)  # Línea vertical en -2.55
+abline(v=2.55, col="red", lwd=2, lty=2)   # Línea vertical en 2.55
+
+# Colorear las áreas de rechazo
+polygon(c(x[x <= -2.55], -2.55), c(y[x <= -2.55], 0), col="red", border=NA)
+polygon(c(2.55, x[x >= 2.55]), c(0, y[x >= 2.55]), col="red", border=NA)
+
+# Agregar leyenda
+legend("topright", legend=c("Zonas de Rechazo"), fill="red", border="black")
+
+# Agregar los valores de los intervalos de confianza en las líneas rojas
+text(-2.55, 0.05, labels="-2.55", pos=3, col="black", cex=0.7)
+text(2.55, 0.05, labels="2.55", pos=3, col="black", cex=0.7)
+```
+ 
+
+```{r}
+qt(0.02/2,18)
+qt(c(0.02/2,1-0.02/2),18)
+```
+
+5) Conclusión  
+A un $\alpha = 0.02$, se puede afirmar que existe correlación significativa entre la temperatura del recinto y el número de latidos/minuto de los lagartos.
+
+ 
+### d) **Obtenga un intervalo del 98% de confianza para el coeficiente de correlación**  
+
+```{r}
+cor.test(PD1$X,PD1$Y,method="p",alternative = "t",
+         conf.level = 0.98)$conf
+```
+$IC(\rho) = [0.9162722, 0.9908944]$  
+
+El intervalo que va de 0.916 a 0.991 brinda un 98% de confianza de contener a la correlación entre la temperatura del recinto y el número de latidos/minuto de los lagartos.
+
+
+## **Análisis de Regresión Lineal Simple**  
+
+### e) Obtenga la ecuación de regresión estimada. Interprete los coeficientes estimados.
+
+```{r}
+modelo<-lm(Y~X,data=PD1)
+print(modelo)
+```
+
+$$\hat{Y}= 1.4591 + 0.9545x$$
+
+El código $lm(Y\sim X, data = PD1)$ nos permite conocer los coeficientes de nuestro modelo.  
+
+- $b_{o} = 1.4591$ No tiene interpretación  
+- $b_{1} = 0.9545$ Al aumentarse la temperatura en un grado $_{}^{o}\textrm{C}$, se espera que el número medio de latidos se incremente en 0.9545 latidos/minuto.
+
+
+### f y h
+f) Realice el Análisis de Varianza. Use $\alpha = 0.02$
+h) Pruebe la significancia individual de $\beta _{1}$. Use $\alpha = 0.02$
+
+1a) 
+ $$H_{0} : \rho = 0$$
+ $$H_{1} : \rho \neq 0 $$
+ 2a) 
+ $$\alpha = 0.02$$
+ 3a) Prueba estadística
+ 
+ $$F = \frac{CMReg}{CME} \sim F_{(1, n-2)}$$
+ 4a) Desarrollo de la prueba
+ 
+```{r}
+anova(modelo)
+```
+F= 309.39, p-valor = 0.0000000000008732
+
+5a) Región Crítica
+1b) 
+ $$H_{0} : \rho = 0$$
+ $$H_{1} : \rho \neq 0 $$
+ 2b) 
+ $$\alpha = 0.02$$
+ 3b) Prueba estadística
+ 
+ $$t = \frac{\hat{\beta _{1}}}{EE(\hat{\beta _{1}})} \sim t_{(n-2)}$$
+ 
+ 4b) Desarrollo de la prueba
+ 
+```{r}
+summary(modelo)
+```
+
+ $t_{cal}$ = 17.590, p-valor = 8.73e-13 
+ 
+5b) Región Crítica 
+
+6ab) 
+
+A un $\alpha = 0.02$, se puede afirmar que el número de latidos/minuto es explicado por la temperatura en el recinto.
+
+\newpage
+
+### g) Halle intervalos del 98% de confianza para $\beta_{0}$ y $\beta_{1}$  
+
+```{r}
+confint(modelo,level = 0.98)
+```
+$$IC(\beta_{1}) = [0.8160338, 1.093057]$$
+El intervalo va de 0.816 a 1.093 brinda un 98% de confianza de contener a $\beta_{1}$
+
+### i) Halle un intervalo del 98% de confianza para $\sigma_{\varepsilon}^{2}$
+
+$$ IC({\sigma_{\varepsilon }}^{2}) = \left [ \frac{(n-2)CMRes}{x_{(1-\alpha/2, n-2)}^{2}}, \frac{(n-2)CMRes}{x_{(\alpha/2, n-2)}^{2}} \right ] $$
+
+```{r}
+sig<-summary(modelo)$sigma
+n<-nrow(PD1)
+LI<-(n-2)*sig^2/qchisq(1-0.02/2,n-2)
+LS<-(n-2)*sig^2/qchisq(0.02/2,n-2)
+c(LI,LS)
+```
+El intervalo que va de 1.005 a 4.987 brinda un 98% de confianza de contener a $\sigma_{\varepsilon}^{2}$ 
+
+### j) Halle e interprete el coeficiente de determinación
+
+```{r}
+summary(modelo)$r.sq*100
+```
+$$ r^2 = 94.5% $$ 
+El 94.5% de la variabilidad del número de latidos/minuto es explicado por la temperatura en el recinto.
+
+### k) **Halle un intervalo del 98% de confianza para el número medio de latidos por minuto a una temperatura de 33 ºC**
+
+
+```{r}
+predict(modelo, data.frame(X = 33), level = 0.98, interval = "confidence")
+``` 
+
+$IC(U_{y/x})$ = [32.116, 33.801]  
+
+El intervalo que va de 32.116 a 33.801 brinda un 98% de confianza de contener al número medio de latidos/minuto cuando el recinto tiene una temperatura de 33$_{}^{o}\textrm{C}$
+
+### l) **Halle un intervalo del 98% de confianza para el número de latidos por minuto, de un recinto que tiene 39 ºC**
+
+
+```{r}
+predict(modelo, data.frame(X = 33), level = 0.98, interval = "prediction")
+``` 
+IC(Y) = [34.874, 42.497]  
+
+
+
+
+
